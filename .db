@@ -1,24 +1,17 @@
--- 1. Create the Database
-CREATE DATABASE IF NOT EXISTS smart_planner;
-USE smart_planner;
-
--- 2. Create Developers Table (The "Who")
+use smart_planner;
+show tables;
 CREATE TABLE developers (
     dev_id INT PRIMARY KEY,
     name VARCHAR(100),
     experience_level VARCHAR(20), 
-    primary_skill VARCHAR(50)
+    primary_skill VARCHAR(50),
+    current_load INT DEFAULT 0,
 );
-
--- 3. Create Sprint Context Table (The "When")
 CREATE TABLE sprint_context (
     sprint_id INT PRIMARY KEY,
     team_load_percentage INT,     
     is_holiday_season BOOLEAN     
 );
-
--- 4. Create Historical Tasks Table (The "What")
--- This table 'links' the others using Foreign Keys
 CREATE TABLE historical_tasks (
     task_id INT PRIMARY KEY,
     dev_id INT,
@@ -30,3 +23,8 @@ CREATE TABLE historical_tasks (
     FOREIGN KEY (dev_id) REFERENCES developers(dev_id),
     FOREIGN KEY (sprint_id) REFERENCES sprint_context(sprint_id)
 );
+
+ALTER TABLE developers
+ADD COLUMN current_load INT DEFAULT 0;
+
+DESCRIBE developers;

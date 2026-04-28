@@ -15,7 +15,7 @@ user = os.getenv("DB_USER")
 raw_password = os.getenv("DB_PASSWORD")
 password = urllib.parse.quote_plus(raw_password)
 # Ensure your DB_HOST and DB_NAME are correct
-engine = create_engine(f"mysql+pymysql://{user}:{password}@localhost/smart_planner")
+engine = create_engine(f"mysql+pymysql://{user}:{password}@db/smart_planner")
 
 # 2. Fetch the data
 query = """
