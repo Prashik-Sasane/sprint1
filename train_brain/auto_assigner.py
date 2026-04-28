@@ -14,7 +14,7 @@ MODEL_DIR = BASE_DIR.parent
 
 user = os.getenv("DB_USER", "root")
 raw_password = os.getenv("DB_PASSWORD", "")
-host = os.getenv("DB_HOST", "localhost")
+host = os.getenv("DB_HOST", "db")
 db = os.getenv("DB_NAME", "smart_planner")
 password = urllib.parse.quote_plus(raw_password)
 engine = create_engine(f"mysql+pymysql://{user}:{password}@{host}/{db}")

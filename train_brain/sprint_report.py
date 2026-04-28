@@ -19,7 +19,7 @@ REPORT_IMAGE_PATH = PROJECT_ROOT / "Backend" / "static" / "sprint_report.png"
 user = os.getenv("DB_USER", "root")
 raw_password = os.getenv("DB_PASSWORD", "")
 password = urllib.parse.quote_plus(raw_password)
-host = os.getenv("DB_HOST", "localhost")
+host = os.getenv("DB_HOST", "db")
 db = os.getenv("DB_NAME", "smart_planner")
 
 engine = create_engine(f"mysql+pymysql://{user}:{password}@{host}/{db}")

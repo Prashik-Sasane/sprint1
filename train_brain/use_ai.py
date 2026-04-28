@@ -16,7 +16,7 @@ MODEL_DIR = BASE_DIR.parent
 # --- 2. DATABASE CONFIG ---
 user = os.getenv("DB_USER", "root")
 password = urllib.parse.quote_plus(os.getenv("DB_PASSWORD", ""))
-host = os.getenv("DB_HOST", "localhost")
+host = os.getenv("DB_HOST", "db")
 db_name = os.getenv("DB_NAME", "smart_planner")
 
 # Create Engine
