@@ -58,8 +58,5 @@ model_risk.fit(X, df['is_failed'])
 joblib.dump(model_time, 'time_model.pkl')
 joblib.dump(model_risk, 'risk_model.pkl')
 
-<<<<<<< HEAD
-print("✅ Training Complete: Models optimized with Scaling and Balanced Weights!")
-=======
 print("Phase 4.5 Training Complete: Both brains are ready!")
->>>>>>> eab1ceda0769accb80d22a13979d514e810bb697
+
