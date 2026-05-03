@@ -116,7 +116,7 @@ try:
                 experience_level VARCHAR(20),
                 primary_skill VARCHAR(50),
                 PRIMARY KEY (dev_id),
-                current_load INT DEFAULT 0
+                current_load INT DEFAULT 0,
                 max_capacity INT DEFAULT 40
             );
         """))
