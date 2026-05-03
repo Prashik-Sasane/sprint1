@@ -30,7 +30,7 @@ export default function TaskInput() {
     setResponse(null); 
 
     try {
-      const res = await axios.post('http://127.0.0.1:8000/api/predict-sprint', {
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/predict-sprint`, {
         tasks: tasks,
         current_team_load: parseFloat(teamLoad),
         deadline_limit: parseFloat(deadline)
