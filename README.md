@@ -1,134 +1,103 @@
-# OptiSprint AI – Sprint Planner
+# OptiSprint AI
 
-A full-stack AI-powered sprint planning tool for agile teams. Combines a FastAPI backend (Python), React frontend, and machine learning models for smart task assignment, risk analysis, and sprint analytics.
+OptiSprint is a sprint planning workspace built with FastAPI, React, and lightweight ML heuristics. It now behaves more like a real planning tool than a UI demo: you can model backlog detail, team capacity, task dependencies, owner hints, and delivery risk in one flow.
 
----
+## What Changed
 
-## Features
-
-- **AI Task Assignment:** Automatically assigns tasks to developers based on skill, workload, and risk.
-- **Sprint Analytics:** Visualizes workload distribution and team utilization.
-- **Risk Prediction:** Estimates risk of task failure using historical data.
-- **Modern UI:** Built with React, Tailwind CSS, and Vite.
-- **Dockerized:** Easy deployment with Docker and Docker Compose.
-
----
+- Rich sprint planning inputs instead of only `story_points`
+- Editable team capacity model with availability, focus, and current load
+- Structured task analysis with recommended owner, backup owner, blockers, and risk
+- Interactive dashboard for workload, portfolio mix, dependency pressure, and planning history
+- Safer backend fallback behavior when MySQL is unavailable
+- Better runtime schema support for richer sprint records and saved snapshots
 
 ## Project Structure
 
-```
-Sprint_PLanner/
-├── Backend/                # FastAPI backend (main API server)
-│   └── main.py
-├── frontend/               # React frontend (Vite)
-│   └── src/
-├── train_brain/            # AI/ML logic (model training, inference)
-│   ├── train_brain.py
-│   ├── auto_assigner.py
-│   ├── use_ai.py
-│   └── sprint_report.py
-├── requirements.txt        # Python dependencies
-├── dockerfile              # Backend Dockerfile
-├── docker-compose.yml      # Multi-service orchestration
-├── rules.txt               # Assignment rules/heuristics
-└── README.md               # Project documentation
+```text
+Backend/                 FastAPI API
+frontend/                React + Vite frontend
+train_brain/             Planning logic, assignment logic, seed/training scripts
+time_model.pkl           Time estimation model
+risk_model.pkl           Risk prediction model
+docker-compose.yml       MySQL + API services
+dockerfile               API container build
 ```
 
----
+## API Endpoints
 
-## Backend (FastAPI)
+- `GET /api/reference-data`
+  Returns seeded backlog items, team members, and recent snapshots.
+- `POST /api/predict-sprint`
+  Runs the planner and returns sprint metrics, task recommendations, workload, and insights.
+- `POST /api/auto-assign`
+  Produces and optionally persists assignment output.
+- `GET /api/sprint-report`
+  Returns the latest saved analytics and assignment summary.
 
-- **Location:** `Backend/`
-- **Main entry:** `main.py`
-- **Endpoints:**
-  - `/api/predict-sprint` – Predicts time and risk for a set of tasks
-  - `/api/auto-assign` – Runs the auto-assignment algorithm
-  - `/api/sprint-report` – Generates and returns sprint analytics
-- **ML Integration:** Uses models from `train_brain/` (see below)
-- **Database:** Connects to MySQL (see `.env` and Docker Compose)
+## Frontend Flow
 
----
+- `/`
+  Landing page
+- `/planner`
+  Sprint configuration, team setup, and backlog editing
+- `/dashboard`
+  Delivery confidence, workload, risk, and task-level recommendations
 
-## AI/ML Engine (`train_brain/`)
+## Run Locally
 
-- **Model Training:** `train_brain.py` (trains time and risk models)
-- **Inference:** `use_ai.py` (loads models, exposes prediction functions)
-- **Auto Assignment:** `auto_assigner.py` (greedy assignment logic)
-- **Sprint Analytics:** `sprint_report.py` (generates workload charts)
-- **Models:** `time_model.pkl`, `risk_model.pkl` (saved in project root)
+### Backend
 
----
+Create a virtual environment and install Python dependencies:
 
-## Frontend (React + Vite)
-
-- **Location:** `frontend/`
-- **Main entry:** `src/App.jsx`
-- **Pages:**
-  - Dashboard: Sprint analytics and workload chart
-  - Task Input: Enter tasks, get AI predictions
-- **Proxy:** API requests proxied to backend via Vite config
-- **UI:** Tailwind CSS, Lucide icons
-
----
-
-## Setup & Usage
-
-### 1. Prerequisites
-- Docker & Docker Compose
-- (Or) Python 3.10+, Node.js 18+, MySQL 8 (manual setup)
-
-### 2. Environment Variables
-Create a `.env` file in the root with:
-```
-DB_USER=root
-DB_PASSWORD=yourpassword
-DB_HOST=db
-DB_NAME=smart_planner
-MYSQL_ROOT_PASSWORD=yourpassword
+```bash
+python -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
 ```
 
-### 3. Run with Docker Compose
-```sh
-docker-compose up --build
+Start the API:
+
+```bash
+.venv/bin/python -m uvicorn Backend.main:app --reload
 ```
-- Backend: http://localhost:8000
-- Frontend: http://localhost:5173
-- MySQL: localhost:3307
 
-### 4. Manual Development
-- **Backend:**
-  ```sh
-  cd Sprint_PLanner
-  pip install -r requirements.txt
-  uvicorn Backend.main:app --reload
-  ```
-- **Frontend:**
-  ```sh
-  cd frontend
-  npm install
-  npm run dev
-  ```
+### Frontend
 
----
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-## Assignment Rules
-See `rules.txt` for the logic behind task assignment and risk heuristics.
+The frontend expects the API on `http://127.0.0.1:8000`.
 
----
+## Database
 
-## License
-MIT License. See LICENSE file.
+The app works without MySQL by falling back to built-in sample team and backlog data. If you want persistence and seeded planning history, start the database first and run:
 
----
+```bash
+python train_brain/seed_data.py
+```
 
-## Authors
-- [Your Name Here]
+### Docker / Podman Compose
 
----
+You can use Docker Compose or Podman Compose with the existing `docker-compose.yml`:
 
-## Acknowledgements
-- [FastAPI](https://fastapi.tiangolo.com/)
-- [React](https://react.dev/)
-- [Vite](https://vitejs.dev/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [Lucide Icons](https://lucide.dev/)
+```bash
+docker compose up --build
+```
+
+or
+
+```bash
+podman compose up --build
+```
+
+## Verification
+
+These checks passed for the current code:
+
+- `python -m compileall -q train_brain Backend`
+- `cd frontend && npm run lint`
+- `cd frontend && npm run build`
+
+I also smoke-tested the planner logic directly through the Python modules using fallback data, including prediction, assignment, and report generation.

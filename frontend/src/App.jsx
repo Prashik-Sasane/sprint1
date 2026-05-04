@@ -1,68 +1,147 @@
-import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import Navbar from './components/Navbar';
-import Dashboard from './pages/Dashboard';
-import TaskInput from './pages/TaskInput';
-import LandingPage from './pages/LandingPage';
+import React, { startTransition, useEffect, useState } from 'react';
+import { BrowserRouter as Router, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { ThemeProvider } from '@/lib/theme';
+import AppLayout from '@/components/layout/AppLayout';
+import Dashboard from '@/pages/Dashboard';
+import LandingPage from '@/pages/LandingPage';
+import TaskInput from '@/pages/TaskInput';
+import TeamPage from '@/pages/TeamPage';
+import BoardPage from '@/pages/BoardPage';
+import TimelinePage from '@/pages/TimelinePage';
+import ActivityPage from '@/pages/ActivityPage';
+import SettingsPage from '@/pages/SettingsPage';
+import { fetchReferenceData, fetchSprintReport, predictSprint, updateTask } from '@/lib/api';
+import { createPlannerState } from '@/lib/planner';
 
-// We use a sub-component so we can access hooks like useLocation
 function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
-  
-  // This state stores the prediction results from the backend
-  const [sprintData, setSprintData] = useState(null);
+  const [plannerState, setPlannerState] = useState(createPlannerState());
+  const [analysis, setAnalysis] = useState(null);
+  const [report, setReport] = useState(null);
+  const [bootstrapping, setBootstrapping] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
-  // Triggered by buttons on the Landing Page
-  const handleStart = () => {
-    navigate('/input');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  useEffect(() => {
+    let active = true;
+    async function bootstrap() {
+      try {
+        const [reference, sprintReport] = await Promise.all([
+          fetchReferenceData(),
+          fetchSprintReport(),
+        ]);
+        if (!active) return;
+        setPlannerState(createPlannerState(reference));
+        setReport(sprintReport);
+      } catch {
+        if (!active) return;
+        setLoadError('Live data unavailable. Using local defaults.');
+      } finally {
+        if (active) setBootstrapping(false);
+      }
+    }
+    bootstrap();
+    return () => { active = false; };
+  }, []);
+
+  const startPlanning = () => {
+    startTransition(() => {
+      navigate('/planner');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
   };
 
-  // Triggered when TaskInput receives data from FastAPIv
-  const handleAnalysisComplete = (data) => {
-    setSprintData(data);
-    navigate('/results'); 
+  const runAnalysis = async (payload, draftState) => {
+    const result = await predictSprint(payload);
+    if (draftState) {
+      setPlannerState(createPlannerState(draftState));
+    }
+    setAnalysis(result);
+    try { const r = await fetchSprintReport(); setReport(r); } catch { /* dashboard can render from analysis */ }
+    startTransition(() => {
+      navigate('/dashboard');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
   };
 
-  // Determine if we should show the App UI (Navbar/Margins) or the Landing UI
-  const isLandingPage = location.pathname === "/" || location.pathname === "";
+  const applyScopeToBoard = async () => {
+    const selectedTaskIds = plannerState.selected_task_ids || [];
+    const availableTasks = plannerState.available_tasks || [];
+    const selectedTasks = availableTasks.filter((task) => selectedTaskIds.includes(task.task_id));
+    const analysisTasks = new Map((analysis?.tasks || []).map((task) => [task.task_id, task]));
+
+    if (selectedTasks.length === 0) {
+      return { count: 0 };
+    }
+
+    await Promise.all(
+      selectedTasks.map((task) => {
+        const analyzed = analysisTasks.get(task.task_id);
+        const recommendedOwner = analyzed?.recommended_assignment?.name || task.assignee_hint || '';
+
+        return updateTask(task.task_id, {
+          sprint_id: Number(task.sprint_id || 1),
+          title: task.title,
+          description: task.description || '',
+          story_points: Number(task.story_points || 1),
+          priority: task.priority || 'Medium',
+          status: task.status && task.status !== 'Backlog' ? task.status : 'To Do',
+          skill_tag: task.skill_tag || 'Backend',
+          task_type: task.task_type || 'Feature',
+          dependencies: task.dependencies || [],
+          due_in_days: Number(task.due_in_days || 10),
+          assignee_hint: recommendedOwner,
+          confidence: Number(task.confidence || 70),
+          must_do: Boolean(task.must_do),
+          assigned_to: recommendedOwner,
+          predicted_hours: Number(analyzed?.predicted_hours || task.predicted_hours || 0),
+          risk_score: Number(analyzed?.risk_pct || task.risk_score || 0),
+        });
+      }),
+    );
+
+    const reference = await fetchReferenceData();
+    setPlannerState(createPlannerState({
+      ...reference,
+      sprint: plannerState.sprint,
+      selected_team_ids: plannerState.selected_team_ids,
+      selected_task_ids: plannerState.selected_task_ids,
+    }));
+
+    return { count: selectedTasks.length };
+  };
+
+  const isLanding = location.pathname === '/';
+
+  if (isLanding) {
+    return <LandingPage onStart={startPlanning} bootstrapping={bootstrapping} />;
+  }
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans">
-      {/* Hide Navbar on the Landing Page */}
-      {!isLandingPage && <Navbar />}
-      
-      {/* If it's the landing page, we use full width (no padding).
-          If it's an app page, we use your original max-7xl container.
-      */}
-      <main className={isLandingPage ? "" : "max-w-7xl mx-auto p-6 lg:p-10"}>
-        <Routes>
-          {/* Landing Page Route */}
-          <Route path="/" element={<LandingPage onStart={handleStart} />} />
-
-          {/* Task Input Route */}
-          <Route 
-            path="/input" 
-            element={<TaskInput onAnalyze={handleAnalysisComplete} />} 
-          />
-
-          {/* Dashboard Route - now receiving the 'sprintData' results */}
-          <Route 
-            path="/results" 
-            element={<Dashboard response={sprintData} />} 
-          />
-           <Route path="*" element={<LandingPage onStart={handleStart} />} />
-        </Routes>
-      </main>
-    </div>
+    <AppLayout>
+      <Routes>
+        <Route path="/planner" element={<TaskInput bootstrapping={bootstrapping} initialState={plannerState} loadError={loadError} onAnalyze={runAnalysis} onApplyToBoard={applyScopeToBoard} />} />
+        <Route path="/input" element={<TaskInput bootstrapping={bootstrapping} initialState={plannerState} loadError={loadError} onAnalyze={runAnalysis} onApplyToBoard={applyScopeToBoard} />} />
+        <Route path="/dashboard" element={<Dashboard analysis={analysis} report={report} onBackToPlanner={startPlanning} onApplyToBoard={applyScopeToBoard} />} />
+        <Route path="/results" element={<Dashboard analysis={analysis} report={report} onBackToPlanner={startPlanning} onApplyToBoard={applyScopeToBoard} />} />
+        <Route path="/team" element={<TeamPage />} />
+        <Route path="/board" element={<BoardPage />} />
+        <Route path="/timeline" element={<TimelinePage />} />
+        <Route path="/activity" element={<ActivityPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+      </Routes>
+    </AppLayout>
   );
 }
 
 export default function App() {
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <ThemeProvider>
+      <Router>
+        <Routes>
+          <Route path="/*" element={<AppContent />} />
+        </Routes>
+      </Router>
+    </ThemeProvider>
   );
 }

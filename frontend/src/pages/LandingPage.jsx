@@ -1,124 +1,147 @@
 import React from 'react';
-import { 
-  Zap, ShieldCheck, BarChart3, Users, ArrowRight, 
-  Cpu, MousePointerClick, Activity, Globe 
-} from 'lucide-react';
+import { ArrowRight, BarChart3, Blocks, Clock3, Columns3, ShieldCheck, Users, Zap } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
-const Feature = ({ icon: Icon, title, desc }) => (
-  <div className="p-8 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all group">
-    <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-6 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-      <Icon size={24} />
-    </div>
-    <h3 className="text-lg font-black text-slate-900 mb-2 uppercase tracking-tight">{title}</h3>
-    <p className="text-slate-500 text-sm font-medium leading-relaxed">{desc}</p>
-  </div>
-);
+const features = [
+  { icon: Blocks, title: 'Sprint Planning', desc: 'Capture scope, dependencies, skill tags, deadlines, and owner hints in one surface.' },
+  { icon: ShieldCheck, title: 'Risk Analysis', desc: 'See why an assignment is risky, which tasks are fragile, and where bottlenecks form.' },
+  { icon: BarChart3, title: 'Capacity Analytics', desc: 'Compare planned work against real capacity with utilization and confidence metrics.' },
+  { icon: Users, title: 'Team Management', desc: 'Add, edit, and manage team members with skills, availability, and workload tracking.' },
+  { icon: Columns3, title: 'Kanban Board', desc: 'Move tasks across columns and track progress from backlog to done.' },
+  { icon: Zap, title: 'AI Insights', desc: 'ML-powered task assignments, burndown charts, and delivery recommendations.' },
+];
 
-export default function LandingPage({ onStart }) {
+export default function LandingPage({ onStart, bootstrapping }) {
   return (
-    <div className="min-h-screen bg-white font-sans selection:bg-indigo-100 selection:text-indigo-900">
-      
-      {/* --- NAVIGATION --- */}
-      <nav className="max-w-7xl mx-auto px-8 py-8 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <div className="bg-indigo-600 p-2 rounded-lg text-white shadow-lg shadow-indigo-200">
-            <Cpu size={20}/>
-          </div>
-          <span className="text-xl font-black tracking-tighter text-slate-900 uppercase">Sprint.AI</span>
-        </div>
-        <div className="hidden md:flex gap-8 text-[10px] font-black uppercase tracking-widest text-slate-400">
-          <a href="#" className="hover:text-indigo-600 transition-colors">Engine</a>
-          <a href="#" className="hover:text-indigo-600 transition-colors">Benchmarks</a>
-          <a href="#" className="hover:text-indigo-600 transition-colors">Documentation</a>
-        </div>
-        <button 
-          onClick={onStart}
-          className="px-6 py-3 bg-slate-900 text-white rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all active:scale-95"
-        >
-          Get Started
-        </button>
-      </nav>
+    <div className="relative min-h-screen overflow-hidden">
+      {/* Background effects */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,hsl(187_64%_34%/0.12),transparent_50%),radial-gradient(ellipse_at_bottom_right,hsl(27_85%_62%/0.08),transparent_50%)]" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 h-[600px] w-[800px] bg-primary/5 rounded-full blur-3xl" />
 
-      {/* --- HERO SECTION --- */}
-      <header className="max-w-6xl mx-auto px-8 pt-24 pb-40 text-center">
-        <div className="inline-flex items-center gap-2 bg-slate-50 border border-slate-100 text-slate-500 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-10 shadow-sm">
-          <Activity size={14} className="text-indigo-600 animate-pulse"/> v4.0 Inference Engine Live
-        </div>
-        
-        <h1 className="text-7xl md:text-9xl font-black text-slate-900 tracking-tighter mb-10 leading-[0.85]">
-          Predict your <br/>
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-600 animate-gradient">Sprint's Future.</span>
-        </h1>
-        
-        <p className="max-w-2xl mx-auto text-xl text-slate-500 font-medium leading-relaxed mb-14">
-          The world's first multi-model inference engine for engineering managers. 
-          Stop guessing—simulate complexity across levels and eliminate delivery risk.
-        </p>
-
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-          <button 
-            onClick={onStart}
-            className="w-full sm:w-auto px-12 py-7 bg-slate-900 text-white rounded-full font-black uppercase tracking-[0.2em] flex items-center justify-center gap-4 shadow-[0_20px_50px_rgba(0,0,0,0.15)] hover:bg-indigo-600 hover:-translate-y-1 transition-all"
-          >
-            Enter Dashboard <ArrowRight size={20}/>
-          </button>
-          <div className="flex items-center gap-3 text-slate-400 font-bold text-sm">
-            <Users size={18}/> Trusted by 400+ Teams
+      <div className="relative mx-auto max-w-[1200px] px-4 py-8 sm:px-6 lg:px-8">
+        {/* Top bar */}
+        <nav className="flex items-center justify-between rounded-2xl border bg-card/80 backdrop-blur-xl px-6 py-3 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-md">
+              <Zap size={18} />
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-muted-foreground">OptiSprint</p>
+              <p className="text-sm font-semibold">Sprint Planner</p>
+            </div>
           </div>
-        </div>
-      </header>
+          <Button onClick={onStart} className="gap-2">
+            Open Planner <ArrowRight size={16} />
+          </Button>
+        </nav>
 
-      {/* --- CORE FEATURES --- */}
-      <section className="bg-slate-50 py-32 border-y border-slate-100">
-        <div className="max-w-7xl mx-auto px-8">
-          <div className="text-center mb-20 space-y-4">
-            <h2 className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.3em]">The Architecture</h2>
-            <p className="text-4xl font-black text-slate-900 tracking-tight">Precision at every level.</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-            <Feature 
-              icon={BarChart3}
-              title="Simulation Engine"
-              desc="Compare delivery timelines across Junior, Mid, and Senior tiers simultaneously using historical velocity data."
-            />
-            <Feature 
-              icon={ShieldCheck}
-              title="Risk Scoring"
-              desc="Our neural network flags high-risk task-level pairings before the sprint starts, preventing 99% of bottlenecks."
-            />
-            <Feature 
-              icon={MousePointerClick}
-              title="Auto-Assignment"
-              desc="Intelligently distributes tasks to developers based on current load, skill level, and available deadline buffer."
-            />
-          </div>
-        </div>
-      </section>
+        {/* Hero */}
+        <section className="mt-16 grid gap-12 lg:grid-cols-2 lg:items-center">
+          <div>
+            <Badge variant="outline" className="gap-2 px-3 py-1.5 mb-6">
+              <Clock3 size={14} className="text-primary" />
+              {bootstrapping ? 'Loading data...' : 'Ready to plan'}
+            </Badge>
 
-      {/* --- SOCIAL PROOF --- */}
-      <section className="py-24 max-w-7xl mx-auto px-8 flex flex-col items-center">
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-10">Integration Ecosystem</p>
-        <div className="flex flex-wrap justify-center gap-12 opacity-30 grayscale contrast-125">
-            <Globe size={40}/>
-            <Zap size={40}/>
-            <Activity size={40}/>
-            <BarChart3 size={40}/>
-            <Users size={40}/>
-        </div>
-      </section>
+            <h1 className="text-5xl font-bold tracking-tight sm:text-6xl lg:text-7xl bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text">
+              Plan sprints with{' '}
+              <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                real context.
+              </span>
+            </h1>
 
-      {/* --- FOOTER --- */}
-      <footer className="bg-white py-20 border-t border-slate-100">
-        <div className="max-w-7xl mx-auto px-8 flex flex-col md:flex-row justify-between items-center gap-10">
-          <div className="flex items-center gap-2">
-            <div className="bg-slate-900 p-1.5 rounded text-white"><Cpu size={14}/></div>
-            <span className="font-black text-slate-900 uppercase tracking-tighter">Sprint.AI</span>
+            <p className="mt-6 max-w-xl text-lg leading-8 text-muted-foreground">
+              OptiSprint combines backlog structure, team capacity, risk signals, and AI-powered delivery
+              recommendations in one flow. Build plans teams can actually run.
+            </p>
+
+            <div className="mt-8 flex flex-wrap items-center gap-4">
+              <Button size="xl" onClick={onStart} className="gap-2 animate-pulse-glow">
+                Start Planning <ArrowRight size={18} />
+              </Button>
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <span className="flex items-center gap-1.5"><Users size={14} className="text-primary" /> Team capacity</span>
+                <span className="flex items-center gap-1.5"><BarChart3 size={14} className="text-amber-500" /> Confidence</span>
+              </div>
+            </div>
           </div>
-          <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">© 2026 Algorithmic Engineering Systems</p>
-          <button onClick={onStart} className="text-indigo-600 font-black text-[10px] uppercase tracking-widest hover:underline">Launch App</button>
-        </div>
-      </footer>
+
+          {/* Preview card */}
+          <Card className="overflow-hidden border-2 border-primary/10 bg-gradient-to-br from-card via-card to-primary/5 shadow-2xl">
+            <div className="border-b border-border/70 p-6">
+              <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Planning brief</p>
+              <p className="mt-2 text-3xl font-bold tracking-tight">Sprint 24</p>
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                {[
+                  { l: 'Scope', v: '8 items' },
+                  { l: 'Capacity', v: '212h' },
+                  { l: 'Risk', v: 'Watch' },
+                  { l: 'Focus', v: 'Backend + UI' },
+                ].map(m => (
+                  <div key={m.l} className="rounded-xl border border-border/80 bg-background/80 px-4 py-3 shadow-sm">
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{m.l}</p>
+                    <p className="mt-1 text-lg font-semibold">{m.v}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <CardContent className="grid gap-3 p-4 sm:grid-cols-3">
+              {features.slice(0, 3).map(f => {
+                const Icon = f.icon;
+                return (
+                  <div key={f.title} className="rounded-xl border p-4 hover:shadow-sm transition-shadow">
+                    <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                      <Icon size={18} />
+                    </div>
+                    <p className="text-sm font-semibold">{f.title}</p>
+                    <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Features grid */}
+        <section className="mt-20">
+          <div className="text-center mb-10">
+            <Badge variant="outline" className="mb-4">Features</Badge>
+            <h2 className="text-3xl font-bold tracking-tight">Everything you need to ship</h2>
+            <p className="mt-2 text-muted-foreground">A complete toolkit for agile team management.</p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {features.map(f => {
+              const Icon = f.icon;
+              return (
+                <Card key={f.title} className="group hover:shadow-md hover:border-primary/20 transition-all">
+                  <CardContent className="p-6">
+                    <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                      <Icon size={20} />
+                    </div>
+                    <p className="text-lg font-semibold">{f.title}</p>
+                    <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* CTA */}
+        <section className="mt-20 mb-10 text-center">
+          <Card className="mx-auto max-w-2xl border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+            <CardContent className="p-10">
+              <h2 className="text-2xl font-bold">Ready to optimize your sprint?</h2>
+              <p className="mt-2 text-muted-foreground">Start planning with AI-powered insights and team analytics.</p>
+              <Button size="xl" onClick={onStart} className="mt-6 gap-2">
+                Launch Planner <ArrowRight size={18} />
+              </Button>
+            </CardContent>
+          </Card>
+        </section>
+      </div>
     </div>
   );
 }
