@@ -16,7 +16,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://pathakadam.space',
+        target: 'https://parthakadam.space/api',
         changeOrigin: true,
       },
     },
