@@ -19,7 +19,7 @@ function AppContent() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Triggered when TaskInput receives data from FastAPI
+  // Triggered when TaskInput receives data from FastAPIv
   const handleAnalysisComplete = (data) => {
     setSprintData(data);
     navigate('/results'); 
