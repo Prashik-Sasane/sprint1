@@ -26,7 +26,7 @@ function AppContent() {
   };
 
   // Determine if we should show the App UI (Navbar/Margins) or the Landing UI
-  const isLandingPage = location.pathname === "/";
+  const isLandingPage = location.pathname === "/" || location.pathname === "";
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
@@ -52,6 +52,7 @@ function AppContent() {
             path="/results" 
             element={<Dashboard response={sprintData} />} 
           />
+           <Route path="*" element={<LandingPage onStart={handleStart} />} />
         </Routes>
       </main>
     </div>
