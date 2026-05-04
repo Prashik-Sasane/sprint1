@@ -47,6 +47,8 @@ export default function TaskInput() {
     } catch (err) {
       console.error("Inference Error:", err);
       alert("AI Engine Offline: Ensure FastAPI is running on port 8000.");
+      console.log("ENV:", import.meta.env);
+      console.log("API:", import.meta.env.VITE_API_URL);
     } finally {
       setLoading(false);
     }
