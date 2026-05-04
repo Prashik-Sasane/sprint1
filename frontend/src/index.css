@@ -1,4 +1,167 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-background: hsl(0 0% 100%);
+  --color-foreground: hsl(222 47% 11%);
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(222 47% 11%);
+  --color-popover: hsl(0 0% 100%);
+  --color-popover-foreground: hsl(222 47% 11%);
+  --color-primary: hsl(187 64% 34%);
+  --color-primary-foreground: hsl(0 0% 100%);
+  --color-secondary: hsl(210 40% 96%);
+  --color-secondary-foreground: hsl(222 47% 11%);
+  --color-muted: hsl(210 40% 96%);
+  --color-muted-foreground: hsl(215 16% 47%);
+  --color-accent: hsl(210 40% 96%);
+  --color-accent-foreground: hsl(222 47% 11%);
+  --color-destructive: hsl(0 84% 60%);
+  --color-destructive-foreground: hsl(0 0% 100%);
+  --color-border: hsl(214 32% 91%);
+  --color-input: hsl(214 32% 91%);
+  --color-ring: hsl(187 64% 34%);
+  --color-chart-1: hsl(187 64% 34%);
+  --color-chart-2: hsl(27 85% 62%);
+  --color-chart-3: hsl(102 30% 61%);
+  --color-chart-4: hsl(262 50% 55%);
+  --color-chart-5: hsl(350 70% 55%);
+  --color-sidebar: hsl(222 47% 11%);
+  --color-sidebar-foreground: hsl(210 20% 82%);
+  --color-sidebar-accent: hsl(217 33% 17%);
+  --color-sidebar-border: hsl(217 33% 17%);
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+}
+
+/* Dark mode overrides */
+.dark {
+  --color-background: hsl(222 47% 6%);
+  --color-foreground: hsl(210 20% 92%);
+  --color-card: hsl(222 40% 9%);
+  --color-card-foreground: hsl(210 20% 92%);
+  --color-popover: hsl(222 40% 9%);
+  --color-popover-foreground: hsl(210 20% 92%);
+  --color-primary: hsl(187 64% 42%);
+  --color-primary-foreground: hsl(0 0% 100%);
+  --color-secondary: hsl(217 33% 15%);
+  --color-secondary-foreground: hsl(210 20% 82%);
+  --color-muted: hsl(217 33% 15%);
+  --color-muted-foreground: hsl(215 20% 55%);
+  --color-accent: hsl(217 33% 17%);
+  --color-accent-foreground: hsl(210 20% 92%);
+  --color-destructive: hsl(0 62% 50%);
+  --color-destructive-foreground: hsl(0 0% 100%);
+  --color-border: hsl(217 33% 17%);
+  --color-input: hsl(217 33% 17%);
+  --color-ring: hsl(187 64% 42%);
+  --color-chart-1: hsl(187 64% 48%);
+  --color-chart-2: hsl(27 85% 62%);
+  --color-chart-3: hsl(102 35% 55%);
+  --color-chart-4: hsl(262 50% 60%);
+  --color-chart-5: hsl(350 70% 60%);
+  --color-sidebar: hsl(222 47% 6%);
+  --color-sidebar-foreground: hsl(210 20% 72%);
+  --color-sidebar-accent: hsl(217 33% 12%);
+  --color-sidebar-border: hsl(217 33% 12%);
+}
+
+* {
+  box-sizing: border-box;
+  border-color: var(--color-border);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  @apply bg-slate-50 text-slate-900 font-sans;
+  margin: 0;
+  min-width: 320px;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Smooth transitions for theme changes */
+* {
+  transition-property: background-color, border-color, color;
+  transition-duration: 0.15s;
+  transition-timing-function: ease;
+}
+
+/* Reset transition for elements that need instant response */
+button,
+a,
+input,
+select,
+textarea {
+  transition-duration: 0.1s;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-muted-foreground);
+  border-radius: 999px;
+  opacity: 0.3;
+}
+::-webkit-scrollbar-thumb:hover {
+  opacity: 0.5;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(187 64% 42% / 0.3); }
+  50% { box-shadow: 0 0 20px 4px hsl(187 64% 42% / 0.15); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out;
+}
+
+.animate-slide-in {
+  animation: slideInLeft 0.3s ease-out;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
 }

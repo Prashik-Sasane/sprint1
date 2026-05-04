@@ -1,91 +1,92 @@
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sqlalchemy import create_engine
-import os
-import urllib.parse
-from pathlib import Path
-from dotenv import load_dotenv
+from __future__ import annotations
 
-# --- 0. PATH & ENV CONFIG ---
-load_dotenv()
-BASE_DIR = Path(__file__).resolve().parent  # /train_brain
-PROJECT_ROOT = BASE_DIR.parent              # /SPRINT_PLANER
+from collections import Counter
 
-# Define where the image will be saved
-# Ensure your 'Backend/static' folder exists!
-REPORT_IMAGE_PATH = PROJECT_ROOT / "Backend" / "static" / "sprint_report.png"
+from sqlalchemy import text
 
-user = os.getenv("DB_USER", "root")
-raw_password = os.getenv("DB_PASSWORD", "")
-password = urllib.parse.quote_plus(raw_password)
-host = os.getenv("DB_HOST", "db")
-db = os.getenv("DB_NAME", "smart_planner")
+from train_brain.runtime import db_available, engine, fetch_history
 
-engine = create_engine(f"mysql+pymysql://{user}:{password}@{host}/{db}")
 
-# --- 1. CORE REPORTING FUNCTION ---
 def generate_sprint_analytics():
-    """
-    Fetches assignment data from MySQL, aggregates utilization,
-    and generates a workload visualization image.
-    """
-    try:
-        # Fetch Data
-        query = """
-            SELECT s.assigned_to, s.predicted_hours, d.experience_level 
-            FROM sprint_table s
-            JOIN developers d ON s.assigned_to = d.name
-            WHERE s.status = 'Assigned'
-        """
-        df = pd.read_sql(query, con=engine)
+    history = fetch_history(limit=6)
 
-        if df.empty:
-            return {"status": "error", "message": "No assigned tasks found in DB."}
-
-        # Aggregate Workload
-        workload = df.groupby(['assigned_to', 'experience_level'])['predicted_hours'].sum().reset_index()
-        CAPACITY = 40.0
-        workload['utilization_pct'] = (workload['predicted_hours'] / CAPACITY) * 100
-
-        # --- VISUALIZATION (Server-Safe Mode) ---
-        plt.switch_backend('Agg') # Essential for FastAPI
-        plt.figure(figsize=(12, 6))
-        sns.set_theme(style="whitegrid")
-
-        top_loaded = workload.sort_values(by='predicted_hours', ascending=False).head(20)
-
-        sns.barplot(
-            data=top_loaded, 
-            x='assigned_to', 
-            y='predicted_hours', 
-            hue='experience_level',
-            palette='magma'
-        )
-
-        plt.axhline(y=CAPACITY, color='red', linestyle='--', label='Max Capacity (40h)')
-        plt.title('Top 20 Developer Workloads (Current Sprint)', fontsize=15)
-        plt.xticks(rotation=45)
-        plt.ylabel('Total Predicted Hours')
-        plt.legend()
-        plt.tight_layout()
-
-        # Save to static folder
-        REPORT_IMAGE_PATH.parent.mkdir(parents=True, exist_ok=True)
-        plt.savefig(REPORT_IMAGE_PATH)
-        plt.close()
-
-        # Return Data for the Frontend
+    if not db_available():
+        latest = history[0]["summary"] if history else {}
         return {
-            "status": "success",
-            "metrics": {
-                "total_devs": int(workload['assigned_to'].nunique()),
-                "avg_utilization": round(float(workload['utilization_pct'].mean()), 2),
-                "overloaded_count": int(len(workload[workload['predicted_hours'] > CAPACITY]))
-            },
-            "report_url": "/static/sprint_report.png"
+            "status": "success" if latest else "empty",
+            "metrics": latest.get("metrics", {}),
+            "team_workload": latest.get("team_workload", []),
+            "portfolio": latest.get("portfolio", {}),
+            "history": history,
+            "insights": latest.get("insights", {}),
         }
 
-    except Exception as e:
-        print(f"🔥 Reporting Error: {e}")
-        return {"status": "error", "message": str(e)}
+    with engine.connect() as conn:
+        rows = conn.execute(
+            text(
+                """
+                SELECT
+                    COALESCE(assigned_to, 'Unassigned') AS assigned_to,
+                    COALESCE(predicted_hours, 0) AS predicted_hours,
+                    COALESCE(risk_score, 0) AS risk_score,
+                    COALESCE(priority, 'Medium') AS priority,
+                    COALESCE(skill_tag, 'Backend') AS skill_tag,
+                    COALESCE(status, 'Planned') AS status
+                FROM sprint_table
+                ORDER BY task_id ASC
+                """
+            )
+        ).mappings().all()
+
+    tasks = [dict(row) for row in rows]
+    if not tasks:
+        return {"status": "empty", "message": "No sprint tasks found.", "history": history}
+
+    active_tasks = [task for task in tasks if task["status"] in {"Assigned", "Planned", "Backlog", "To Do", "In Progress", "Review", "Done"}]
+    total_hours = round(sum(task["predicted_hours"] for task in active_tasks), 2)
+    avg_risk = round(
+        sum(task["risk_score"] for task in active_tasks) / max(len(active_tasks), 1),
+        1,
+    )
+
+    workload_counter = Counter()
+    risk_counter = Counter()
+    priority_counter = Counter()
+    skill_counter = Counter()
+
+    for task in active_tasks:
+        workload_counter[task["assigned_to"]] += task["predicted_hours"]
+        risk_counter[task["assigned_to"]] += task["risk_score"]
+        priority_counter[task["priority"]] += 1
+        skill_counter[task["skill_tag"]] += 1
+
+    team_workload = []
+    for owner, hours in workload_counter.items():
+        task_count = sum(1 for task in active_tasks if task["assigned_to"] == owner)
+        team_workload.append(
+            {
+                "name": owner,
+                "assigned_hours": round(hours, 2),
+                "task_count": task_count,
+                "avg_risk_pct": round(risk_counter[owner] / max(task_count, 1), 1),
+            }
+        )
+
+    latest = history[0]["summary"] if history else {}
+
+    return {
+        "status": "success",
+        "metrics": {
+            "predicted_time": total_hours,
+            "risk_score": avg_risk,
+            "assigned_tasks": len([task for task in active_tasks if task["assigned_to"] != "Unassigned"]),
+            "unassigned_tasks": len([task for task in active_tasks if task["assigned_to"] == "Unassigned"]),
+        },
+        "team_workload": sorted(team_workload, key=lambda item: item["assigned_hours"], reverse=True),
+        "portfolio": {
+            "priority_mix": [{"label": key, "value": value} for key, value in priority_counter.items()],
+            "skill_mix": [{"label": key, "value": value} for key, value in skill_counter.items()],
+        },
+        "insights": latest.get("insights", {}),
+        "history": history,
+    }

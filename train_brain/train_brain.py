@@ -11,11 +11,12 @@ from dotenv import load_dotenv
 # 1. Database Connection
 load_dotenv()
 
-user = os.getenv("DB_USER")
-raw_password = os.getenv("DB_PASSWORD")
+user = os.getenv("DB_USER", "root")
+raw_password = os.getenv("DB_PASSWORD", "")
+host = os.getenv("DB_HOST", "db")
+db_name = os.getenv("DB_NAME", "smart_planner")
 password = urllib.parse.quote_plus(raw_password)
-# Ensure your DB_HOST and DB_NAME are correct
-engine = create_engine(f"mysql+pymysql://{user}:{password}@db/smart_planner")
+engine = create_engine(f"mysql+pymysql://{user}:{password}@{host}/{db_name}")
 
 # 2. Fetch the data
 query = """
@@ -59,4 +60,3 @@ joblib.dump(model_time, 'time_model.pkl')
 joblib.dump(model_risk, 'risk_model.pkl')
 
 print("Phase 4.5 Training Complete: Both brains are ready!")
-

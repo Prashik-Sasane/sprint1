@@ -1,107 +1,83 @@
-import joblib
-import pandas as pd
-import numpy as np
-from sqlalchemy import create_engine, text
-import urllib.parse
-import os
-from pathlib import Path
-from dotenv import load_dotenv
+from __future__ import annotations
 
-load_dotenv()
-BASE_DIR = Path(__file__).resolve().parent  # /train_brain
-MODEL_DIR = BASE_DIR.parent
+from sqlalchemy import text
+
+from train_brain.runtime import fetch_backlog, fetch_team_members, upsert_backlog, engine, db_available
+from train_brain.use_ai import create_assignment_plan
 
 
-user = os.getenv("DB_USER", "root")
-raw_password = os.getenv("DB_PASSWORD", "")
-host = os.getenv("DB_HOST", "db")
-db = os.getenv("DB_NAME", "smart_planner")
-password = urllib.parse.quote_plus(raw_password)
-engine = create_engine(f"mysql+pymysql://{user}:{password}@{host}/{db}")
+def run_auto_assignment(payload: dict | None = None):
+    tasks = payload.get("tasks") if payload else fetch_backlog()
+    team_members = payload.get("team_members") if payload else fetch_team_members()
+    sprint = payload.get("sprint") if payload else None
 
-try:
-    time_model = joblib.load(MODEL_DIR / 'time_model.pkl')
-    risk_model = joblib.load(MODEL_DIR / 'risk_model.pkl')
-    print("✅ Auto-Assigner: Models loaded successfully from Root.")
-except Exception as e:
-    print(f"❌ Auto-Assigner Model Error: {e}")
-    time_model = None
-    risk_model = None
+    if not sprint:
+        sprint = {
+            "sprint_name": "Auto Assignment Run",
+            "current_team_load": 45,
+            "deadline_limit": 40,
+            "meeting_hours": 4,
+            "support_hours": 2,
+            "risk_tolerance": "Balanced",
+        }
 
-def run_auto_assignment():
-    if time_model is None or risk_model is None:
-        return {"status": "error", "message": "Models are not loaded."}
-    try:
-        # Ensure schema columns exist.
-        with engine.begin() as conn:
-            conn.execute(text("ALTER TABLE sprint_table MODIFY COLUMN status VARCHAR(50)"))
-            try:
-                conn.execute(text("ALTER TABLE sprint_table ADD COLUMN assigned_to VARCHAR(255)"))
-            except Exception:
-                pass
-            try:
-                conn.execute(text("ALTER TABLE sprint_table ADD COLUMN predicted_hours FLOAT"))
-            except Exception:
-                pass
+    analysis = create_assignment_plan(
+        {"tasks": tasks, "team_members": team_members, "sprint": sprint}
+    )
+    if analysis.get("status") != "success":
+        return analysis
 
-        tasks_df = pd.read_sql("SELECT * FROM sprint_table WHERE status = 'Unassigned'", con=engine)
-        devs_df = pd.read_sql("SELECT * FROM developers", con=engine)
-
-        if tasks_df.empty or devs_df.empty:
-            return {"status": "error", "message": "No unassigned tasks or developers found."}
-
-        devs_df['remaining_hours'] = 40.0
-        level_map = {'Junior': 1, 'Mid': 2, 'Senior': 3}
-        devs_df['lv_val'] = devs_df['experience_level'].map(level_map)
-
-        assignments = []
-        tasks_df = tasks_df.sort_values(by='story_points', ascending=False)
-        print(f"⚡ Turbo Assigning {len(tasks_df)} tasks...")
-
-        for _, task in tasks_df.iterrows():
-            input_data = pd.DataFrame({
-                'story_points': [task['story_points']] * len(devs_df),
-                'experience_level': devs_df['lv_val'].values,
-                'team_load_percentage': [100] * len(devs_df)
-            })
-
-            all_times = time_model.predict(input_data)
-            all_risks = risk_model.predict_proba(input_data)[:, 1]
-            costs = all_times + (all_risks * 20)
-            can_fit = devs_df['remaining_hours'].values >= all_times
-
-            if np.any(can_fit):
-                valid_indices = np.where(can_fit)[0]
-                best_idx = valid_indices[np.argmin(costs[valid_indices])]
-
-                dev_name = devs_df.at[best_idx, 'name']
-                pred_time = all_times[best_idx]
-                devs_df.at[best_idx, 'remaining_hours'] -= pred_time
-
-                assignments.append({
-                    'task_id': task['task_id'],
-                    'assigned_to': dev_name,
-                    'predicted_hours': round(float(pred_time), 2),
-                    'status': 'Assigned'
-                })
-
-        if not assignments:
-            return {"status": "error", "message": "No feasible assignments generated."}
-
-        results_df = pd.DataFrame(assignments)
-        results_df.to_sql('temp_assignments', con=engine, if_exists='replace', index=False)
+    if db_available():
+        persisted_tasks = []
+        for task in analysis["tasks"]:
+            persisted_tasks.append(
+                {
+                    "task_id": task["task_id"],
+                    "sprint_id": task.get("sprint_id", 1),
+                    "title": task["title"],
+                    "description": task.get("description", ""),
+                    "story_points": task["story_points"],
+                    "priority": task["priority"],
+                    "status": task.get("status") if task.get("status") in {"Backlog", "To Do", "In Progress", "Review", "Done"} else "To Do",
+                    "skill_tag": task["skill_tag"],
+                    "task_type": task["task_type"],
+                    "dependencies": task["dependencies"],
+                    "due_in_days": task["due_in_days"],
+                    "assignee_hint": task["recommended_assignment"]["name"],
+                    "confidence": task["confidence"],
+                    "must_do": task["must_do"],
+                    "assigned_to": task["recommended_assignment"]["name"],
+                    "predicted_hours": task["predicted_hours"],
+                    "risk_score": task["risk_pct"],
+                }
+            )
+        upsert_backlog(persisted_tasks)
 
         with engine.begin() as conn:
-            conn.execute(text("""
-                UPDATE sprint_table s
-                JOIN temp_assignments t ON s.task_id = t.task_id
-                SET s.assigned_to = t.assigned_to,
-                    s.status = t.status,
-                    s.predicted_hours = t.predicted_hours
-            """))
-            conn.execute(text("DROP TABLE temp_assignments"))
+            for assignment in analysis["assignments"]:
+                conn.execute(
+                    text(
+                        """
+                        UPDATE sprint_table
+                        SET status = 'To Do',
+                            assigned_to = :assigned_to,
+                            predicted_hours = :predicted_hours,
+                            risk_score = :risk_score
+                        WHERE task_id = :task_id
+                        """
+                    ),
+                    {
+                        "task_id": assignment["task_id"],
+                        "assigned_to": assignment["assigned_to"],
+                        "predicted_hours": assignment["predicted_hours"],
+                        "risk_score": assignment["risk_pct"],
+                    },
+                )
 
-        print(f"🎉 Done! All {len(assignments)} tasks assigned.")
-        return {"status": "success", "assigned": len(assignments)}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
+    return {
+        "status": "success",
+        "assigned": len(analysis["assignments"]),
+        "assignments": analysis["assignments"],
+        "metrics": analysis["metrics"],
+        "delivery_status": analysis["delivery_status"],
+    }
