@@ -30,7 +30,8 @@ for i in range(1, 151):  # Generate 150 developers
         'dev_id': i,
         'name': f'Developer_{i}',
         'experience_level': random.choice(levels),
-        'primary_skill': random.choice(skills)
+        'primary_skill': random.choice(skills),
+        'current_load': 0
     })
 df_devs = pd.DataFrame(devs_data)
 print(f"✅ Generated {len(df_devs)} developers.")
@@ -114,7 +115,9 @@ try:
                 name VARCHAR(100),
                 experience_level VARCHAR(20),
                 primary_skill VARCHAR(50),
-                PRIMARY KEY (dev_id)
+                PRIMARY KEY (dev_id),
+                current_load INT DEFAULT 0,
+                max_capacity INT DEFAULT 40
             );
         """))
 

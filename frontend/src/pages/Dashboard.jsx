@@ -5,10 +5,14 @@ import { BarChart3, Users, Zap, CheckCircle2, RefreshCw } from 'lucide-react';
 export default function Dashboard() {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
+  const API = import.meta.env.VITE_API_URL;
+  if (!API) {
+  throw new Error("❌ VITE_API_URL is not defined");
+}
 
   const fetchReport = async () => {
     try {
-      const res = await axios.get('/api/sprint-report');
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}api/sprint-report`);
       setReport(res.data);
     } catch (err) { console.log("Awaiting backend data..."); }
   };
@@ -18,7 +22,7 @@ export default function Dashboard() {
   const runAutoAssign = async () => {
     setLoading(true);
     try {
-      await axios.post('/api/auto-assign');
+      await axios.post(`${import.meta.env.VITE_API_URL}api/auto-assign`);
       await fetchReport();
     } catch (err) { alert("Assignment Failed"); }
     setLoading(false);
@@ -40,7 +44,7 @@ export default function Dashboard() {
         <div className="min-h-[400px] bg-slate-50 rounded-[2rem] flex items-center justify-center border-2 border-dashed border-slate-200 overflow-hidden">
           {report?.report_url ? (
             <img 
-              src={`http://127.0.0.1:8000${report.report_url}?t=${Date.now()}`} 
+              src={`${import.meta.env.VITE_API_URL}${report.report_url}?t=${Date.now()}`} 
               className="w-full h-full object-contain" 
               alt="Analytics Chart" 
             />
