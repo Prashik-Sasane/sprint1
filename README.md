@@ -75,7 +75,7 @@ The frontend expects the API on `http://127.0.0.1:8000`.
 The app works without MySQL by falling back to built-in sample team and backlog data. If you want persistence and seeded planning history, start the database first and run:
 
 ```bash
-python train_brain/seed_data.py
+python -m train_brain.seed_data
 ```
 
 ### Docker / Podman Compose

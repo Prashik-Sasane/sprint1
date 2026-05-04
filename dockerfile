@@ -13,4 +13,4 @@ COPY . .
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "python train_brain/seed_data.py && uvicorn Backend.main:app --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "python -m train_brain.seed_data && uvicorn Backend.main:app --host 0.0.0.0 --port 8000"]

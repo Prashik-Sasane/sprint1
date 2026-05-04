@@ -30,7 +30,7 @@ jobs:
             docker compose down
 
             echo "Rebuilding and starting containers..."
-            DOCKER_BUILDKIT=0 docker compose up -d --build
+            DOCKER_BUILDKIT=0 docker-compose up -d --build
 
             echo "Checking running containers..."
             docker ps
