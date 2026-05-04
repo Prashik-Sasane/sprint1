@@ -24,7 +24,5 @@ CREATE TABLE historical_tasks (
     FOREIGN KEY (sprint_id) REFERENCES sprint_context(sprint_id)
 );
 
-ALTER TABLE developers
-ADD COLUMN current_load INT DEFAULT 0;
 
 DESCRIBE developers;
